@@ -326,6 +326,41 @@ if page == "🏠  Dashboard":
     </div>
     """, unsafe_allow_html=True)
 
+    # ── Penjelasan Fitur ───────────────────────
+    with st.expander("📚 Penjelasan Fitur Dataset", expanded=False):
+        st.markdown("""
+        Berikut adalah penjelasan singkat mengenai fitur-fitur utama yang digunakan dalam analisis dan prediksi:
+        
+        * **👤 Data Demografis:**
+            * `Gender`: Jenis kelamin pelanggan.
+            * `Age`: Usia pelanggan.
+            * `Country` & `City`: Lokasi geografis tempat tinggal pelanggan.
+            * `Subscription Type`: Jenis paket layanan (Monthly / Annual).
+            * `Is Premium User`: Status keanggotaan premium (0: Standar, 1: Premium).
+        
+        * **📱 Aktivitas Digital:**
+            * `Total Visits`: Jumlah kunjungan pelanggan ke aplikasi/website.
+            * `Avg Session Time`: Rata-rata waktu yang dihabiskan per kunjungan (menit).
+            * `Pages per Session`: Rata-rata jumlah halaman yang diakses per kunjungan.
+            * `Email Open Rate`: Rasio keterbukaan email marketing yang dikirim.
+            * `Email Click Rate`: Rasio klik pada link dalam email marketing.
+        
+        * **💳 Data Transaksi & Pembayaran:**
+            * `Total Spent`: Akumulasi nominal belanja pelanggan ($).
+            * `Avg Order Value`: Rata-rata nilai per transaksi pembelian ($).
+            * `Discount Used`: Apakah pelanggan pernah menggunakan diskon belanja.
+            * `Support Tickets`: Jumlah tiket komplain/bantuan yang diajukan.
+            * `Refund Requested`: Status pengajuan pengembalian dana.
+            * `Delivery Delay Days`: Rata-rata hari keterlambatan pengiriman barang.
+            * `Satisfaction Score`: Skor kepuasan yang diberikan pelanggan (skala 1–5).
+            * `NPS Score`: Net Promoter Score pelanggan (skala 0–10).
+        
+        * **📈 Nilai Pelanggan & Marketing:**
+            * `Lifetime Value (LTV)`: Estimasi total kontribusi finansial pelanggan selama berlangganan.
+            * `Marketing Spend per User`: Total biaya pemasaran yang dialokasikan untuk pelanggan tersebut.
+            * `Last 3 Month Purchase Freq`: Frekuensi transaksi belanja dalam 3 bulan terakhir.
+        """)
+
     # ── Load data ────────────────────────────
     if not data_ok:
         st.error("❌ Dataset tidak ditemukan di folder `dataset/`.")
@@ -701,11 +736,12 @@ elif page == "📈  Eksplorasi Data":
             st.markdown('<div class="ccard"><div class="cc-title">Boxplot by Churn</div>', unsafe_allow_html=True)
             fig, ax = plt.subplots(figsize=(5,3.6))
             ax.boxplot([df[df["churn"]==0][selected].dropna(), df[df["churn"]==1][selected].dropna()],
-                       labels=["Tidak Churn","Churn"], patch_artist=True,
+                       patch_artist=True,
                        boxprops=dict(facecolor='#EEF3FC',color='#C5D5F5'),
                        medianprops=dict(color='#364C84',linewidth=2.5),
                        whiskerprops=dict(color='#D1D5DB'), capprops=dict(color='#D1D5DB'),
                        flierprops=dict(marker='o',color='#F04438',alpha=0.3,markersize=3))
+            ax.set_xticklabels(["Tidak Churn","Churn"])
             ax.set_title(f"{selected} per Kelompok",fontsize=10,fontweight='600',color='#101828')
             ax.grid(axis='y',alpha=0.35); ax.set_axisbelow(True)
             st.pyplot(fig,transparent=True); plt.close()
