@@ -44,7 +44,8 @@ h1, h2, h3, .ph-h1, .cc-title {
 
 /* ─ App shell ─ */
 .stApp                    { background:#FFFDF5 !important; }
-footer,#MainMenu,header   { visibility:hidden; }
+header                    { background: transparent !important; }
+footer, [data-testid="stMainMenu"], [data-testid="stDeployButton"] { visibility:hidden; }
 [data-testid="stSidebarNav"] { display:none; }
 .block-container          { padding:1.8rem 2.2rem !important; max-width:100% !important; }
 
