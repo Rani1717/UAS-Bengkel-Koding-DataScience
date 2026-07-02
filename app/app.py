@@ -847,14 +847,14 @@ churn
     with col4:
         with st.container(border=True):
             st.markdown("""
-            <div class="cc-title">💡 Temuan Kunci Analisis Churn</div>
-            <div class="cc-sub">Wawasan penting dari data eksplorasi</div>
+            <div class="cc-title">💡 Temuan Kunci Faktor Churn (Model)</div>
+            <div class="cc-sub">Tiga faktor utama pendorong loyalitas vs risiko churn</div>
             <div style="font-size: 0.88rem; line-height: 1.6; color: #475467; margin-top: 0.8rem;">
                 <ul style="padding-left: 1.2rem; margin: 0;">
-                    <li style="margin-bottom: 8px;"><b>Rasio Churn Dasar:</b> Tingkat churn rata-rata pelanggan adalah sebesar <b>15.3%</b> (2.298 pelanggan).</li>
-                    <li style="margin-bottom: 8px;"><b>Saluran Akuisisi Berisiko:</b> Pelanggan dari channel <i>Organic</i> (15.9%) dan <i>Referral</i> (15.8%) menunjukkan persentase churn sedikit di atas rata-rata.</li>
-                    <li style="margin-bottom: 8px;"><b>Tipe Langganan Bulanan:</b> Pengguna paket <i>Monthly</i> (15.5%) lebih rentan melakukan churn dibandingkan paket <i>Annual</i> (15.1%).</li>
-                    <li style="margin-bottom: 8px;"><b>Demografi Usia:</b> Distribusi usia pelanggan churn terpusat secara merata di kisaran 30-50 tahun, serupa dengan pola non-churn.</li>
+                    <li style="margin-bottom: 8px;"><b>⭐ Tingkat Kepuasan (36.3%):</b> Skor kepuasan (<i>Satisfaction Score</i>) adalah faktor penentu paling dominan. Pelanggan dengan skor kepuasan rendah memiliki risiko churn tertinggi.</li>
+                    <li style="margin-bottom: 8px;"><b>💰 Total Belanja (34.7%):</b> Pelanggan dengan akumulasi belanja (<i>Total Spent</i>) yang rendah cenderung lebih mudah berpindah ke kompetitor dibanding pelanggan loyal bernilai tinggi.</li>
+                    <li style="margin-bottom: 8px;"><b>🛠️ Jumlah Komplain (14.5%):</b> Jumlah tiket bantuan (<i>Support Tickets</i>) yang menumpuk berkorelasi kuat dengan churn. Penanganan masalah yang lambat menjadi pemicu utama pelanggan pergi.</li>
+                    <li style="margin-bottom: 8px;"><b>📉 Faktor Pendukung Lain:</b> Jarak sejak pembelian terakhir (<i>days_since_last_purchase</i>) dan masa aktif langganan (<i>tenure_days</i>) berkontribusi minor dalam memperkuat prediksi model.</li>
                 </ul>
             </div>
             """, unsafe_allow_html=True)
@@ -873,7 +873,7 @@ elif page == "🔮  Prediksi Churn":
     st.markdown("""
     <div class="ph">
         <div class="ph-h1">🔮 Prediksi Churn Pelanggan</div>
-        <div class="ph-sub">Masukkan data pelanggan untuk memprediksi kemungkinan churn menggunakan model terbaik</div>
+        <div class="ph-sub">Masukkan data pelanggan atau pilih profil preset untuk memprediksi kemungkinan churn</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -884,63 +884,158 @@ elif page == "🔮  Prediksi Churn":
 
     model, scaler, feature_names = load_artifacts()
 
+    # ══════════════════════════════════════════
+    #  PRESET PROFIL PELANGGAN
+    # ══════════════════════════════════════════
+
+    # Definisi nilai preset
+    PRESETS = {
+        "✏️  Input Manual": None,
+        "💚  Pelanggan Aktif / Loyal": {
+            "gender": "Female", "age": 32, "country": "USA", "city": "New York",
+            "subscription_type": "Annual", "is_premium_user": 1,
+            "acquisition_channel": "Google Ads", "device_type": "Desktop",
+            "total_visits": 40, "avg_session_time": 18.0, "pages_per_session": 9.0,
+            "email_open_rate": 0.75, "email_click_rate": 0.40,
+            "total_spent": 4500.0, "avg_order_value": 120.0, "discount_used": 1,
+            "payment_method": "Credit Card", "coupon_code": "Tidak Ada",
+            "support_tickets": 1, "refund_requested": 0,
+            "delivery_delay_days": 1, "satisfaction_score": 4.5, "nps_score": 9,
+            "marketing_spend_per_user": 25.0, "last_3_month_purchase_freq": 12,
+            "lifetime_value": 3200.0,
+        },
+        "🔴  Pelanggan Berisiko Churn": {
+            "gender": "Male", "age": 45, "country": "India", "city": "Mumbai",
+            "subscription_type": "Monthly", "is_premium_user": 0,
+            "acquisition_channel": "Organic", "device_type": "Mobile",
+            "total_visits": 5, "avg_session_time": 2.0, "pages_per_session": 1.5,
+            "email_open_rate": 0.10, "email_click_rate": 0.05,
+            "total_spent": 120.0, "avg_order_value": 20.0, "discount_used": 0,
+            "payment_method": "UPI", "coupon_code": "Tidak Ada",
+            "support_tickets": 6, "refund_requested": 1,
+            "delivery_delay_days": 10, "satisfaction_score": 1.5, "nps_score": 2,
+            "marketing_spend_per_user": 8.0, "last_3_month_purchase_freq": 1,
+            "lifetime_value": 200.0,
+        },
+    }
+
+    # Pilih preset di luar form agar bisa update form values
+    st.markdown("""
+    <div style="background: #F8F9FD; border: 1px solid #EBF0FA; border-radius: 12px;
+                padding: 1.1rem 1.4rem; margin-bottom: 1.2rem;">
+        <div style="font-size: 0.85rem; font-weight: 700; color: #364C84; margin-bottom: 0.6rem;">
+            ⚡ Pilih Profil Preset (Opsional)
+        </div>
+        <div style="font-size: 0.78rem; color: #667085; margin-bottom: 0.8rem;">
+            Pilih profil siap pakai di bawah ini untuk mengisi form secara otomatis,
+            atau pilih <b>Input Manual</b> untuk mengisi sendiri.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    preset_choice = st.selectbox(
+        "Pilih profil pelanggan:",
+        list(PRESETS.keys()),
+        help="Pilih 'Pelanggan Aktif/Loyal' atau 'Pelanggan Berisiko Churn' untuk auto-fill form, atau 'Input Manual' untuk isi sendiri."
+    )
+
+    # Ambil nilai preset jika dipilih
+    P = PRESETS[preset_choice]
+
+    def pv(key, default):
+        """Ambil nilai dari preset, fallback ke default jika Manual."""
+        return P[key] if P is not None else default
+
+    # Tampilkan banner info sesuai pilihan
+    if P is not None:
+        if "Loyal" in preset_choice:
+            st.success("💚 **Profil Pelanggan Aktif/Loyal** — Form diisi otomatis dengan karakteristik pelanggan setia: langganan Annual, engagement tinggi, satisfaction tinggi.")
+        else:
+            st.error("🔴 **Profil Pelanggan Berisiko Churn** — Form diisi otomatis dengan karakteristik pelanggan yang cenderung akan berhenti: engagement rendah, banyak komplain, satisfaction rendah.")
+        st.info("💡 Kamu tetap bisa mengubah nilai di form di bawah sebelum menekan **Prediksi Sekarang**.")
+
+    # ══════════════════════════════════════════
+    #  FORM INPUT
+    # ══════════════════════════════════════════
     with st.form("pred_form"):
         # ── Demografis ──
         st.markdown('<div style="font-size: 0.95rem; font-weight: 700; color: #364C84; margin-bottom: 0.8rem; border-bottom: 2px solid #EEF3FC; padding-bottom: 4px; display: flex; align-items: center; gap: 8px;"><span>👤</span> Data Demografis</div>', unsafe_allow_html=True)
         d1, d2, d3 = st.columns(3)
+
+        gender_opts  = ["Male","Female","Other"]
+        country_opts = ["USA","Germany","India","UK","Australia"]
+        city_opts    = ["New York","Berlin","Mumbai","London","Sydney","Hamburg","Los Angeles"]
+        sub_opts     = ["Monthly","Annual"]
+
         with d1:
-            gender  = st.selectbox("Gender", ["Male","Female","Other"])
-            country = st.selectbox("Negara", ["USA","Germany","India","UK","Australia"])
+            gender  = st.selectbox("Gender",  gender_opts,  index=gender_opts.index(pv("gender","Male")))
+            country = st.selectbox("Negara",  country_opts, index=country_opts.index(pv("country","USA")))
         with d2:
-            age  = st.slider("Usia", 18, 80, 30)
-            city = st.selectbox("Kota", ["New York","Berlin","Mumbai","London","Sydney","Hamburg","Los Angeles"])
+            age  = st.slider("Usia", 18, 80, pv("age", 30))
+            city = st.selectbox("Kota", city_opts, index=city_opts.index(pv("city","New York")))
         with d3:
-            subscription_type = st.selectbox("Tipe Langganan", ["Monthly","Annual"])
-            is_premium_user   = st.selectbox("Premium User?", [0,1], format_func=lambda x: "Ya ✓" if x else "Tidak ✗")
+            subscription_type = st.selectbox("Tipe Langganan", sub_opts, index=sub_opts.index(pv("subscription_type","Monthly")))
+            is_premium_user   = st.selectbox("Premium User?", [0,1],
+                                              index=pv("is_premium_user", 0),
+                                              format_func=lambda x: "Ya ✓" if x else "Tidak ✗")
 
         # ── Aktivitas ──
         st.markdown('<div style="font-size: 0.95rem; font-weight: 700; color: #364C84; margin-bottom: 0.8rem; border-bottom: 2px solid #EEF3FC; padding-bottom: 4px; display: flex; align-items: center; gap: 8px; margin-top: 1rem;"><span>📱</span> Aktivitas Digital</div>', unsafe_allow_html=True)
         a1, a2, a3 = st.columns(3)
+
+        ch_opts = ["Organic","Email","Facebook Ads","Referral","Google Ads"]
+        dv_opts = ["Mobile","Desktop","Tablet"]
+
         with a1:
-            acquisition_channel = st.selectbox("Channel Akuisisi", ["Organic","Email","Facebook Ads","Referral","Google Ads"])
-            device_type         = st.selectbox("Tipe Perangkat", ["Mobile","Desktop","Tablet"])
+            acquisition_channel = st.selectbox("Channel Akuisisi", ch_opts, index=ch_opts.index(pv("acquisition_channel","Organic")))
+            device_type         = st.selectbox("Tipe Perangkat",   dv_opts, index=dv_opts.index(pv("device_type","Mobile")))
         with a2:
-            total_visits     = st.slider("Total Kunjungan", 1, 50, 15)
-            avg_session_time = st.slider("Avg Session Time (mnt)", 0.0, 30.0, 8.0, 0.1)
+            total_visits     = st.slider("Total Kunjungan",          1,   50,   pv("total_visits", 15))
+            avg_session_time = st.slider("Avg Session Time (mnt)",   0.0, 30.0, float(pv("avg_session_time", 8.0)), 0.1)
         with a3:
-            pages_per_session = st.slider("Halaman per Sesi", 0.0, 15.0, 4.0, 0.1)
-            email_open_rate   = st.slider("Email Open Rate", 0.0, 1.0, 0.5, 0.01)
-            email_click_rate  = st.slider("Email Click Rate", 0.0, 0.5, 0.25, 0.01)
+            pages_per_session = st.slider("Halaman per Sesi",  0.0, 15.0, float(pv("pages_per_session", 4.0)), 0.1)
+            email_open_rate   = st.slider("Email Open Rate",   0.0,  1.0, float(pv("email_open_rate", 0.5)),   0.01)
+            email_click_rate  = st.slider("Email Click Rate",  0.0,  0.5, float(pv("email_click_rate", 0.25)), 0.01)
 
         # ── Transaksi ──
         st.markdown('<div style="font-size: 0.95rem; font-weight: 700; color: #364C84; margin-bottom: 0.8rem; border-bottom: 2px solid #EEF3FC; padding-bottom: 4px; display: flex; align-items: center; gap: 8px; margin-top: 1rem;"><span>💳</span> Data Transaksi</div>', unsafe_allow_html=True)
         t1, t2, t3 = st.columns(3)
+
+        pm_opts  = ["UPI","PayPal","BKash","Credit Card","Bank Transfer"]
+        cpn_opts = ["Tidak Ada","NEW20","REF10","SALE5"]
+
         with t1:
-            total_spent     = st.number_input("Total Spent ($)", 0.0, 20000.0, 500.0, 10.0)
-            avg_order_value = st.number_input("Avg Order Value ($)", 0.0, 200.0, 60.0, 1.0)
-            discount_used   = st.selectbox("Pernah Pakai Diskon?", [0,1], format_func=lambda x: "Ya" if x else "Tidak")
+            total_spent     = st.number_input("Total Spent ($)",      0.0, 20000.0, float(pv("total_spent", 500.0)), 10.0)
+            avg_order_value = st.number_input("Avg Order Value ($)",  0.0,   200.0, float(pv("avg_order_value", 60.0)), 1.0)
+            discount_used   = st.selectbox("Pernah Pakai Diskon?", [0,1],
+                                            index=pv("discount_used", 0),
+                                            format_func=lambda x: "Ya" if x else "Tidak")
         with t2:
-            payment_method  = st.selectbox("Metode Pembayaran", ["UPI","PayPal","BKash","Credit Card","Bank Transfer"])
-            coupon_code     = st.selectbox("Kode Kupon", ["Tidak Ada","NEW20","REF10","SALE5"])
-            support_tickets = st.slider("Jumlah Support Ticket", 0, 10, 2)
+            payment_method  = st.selectbox("Metode Pembayaran", pm_opts,  index=pm_opts.index(pv("payment_method","UPI")))
+            coupon_code     = st.selectbox("Kode Kupon",        cpn_opts, index=cpn_opts.index(pv("coupon_code","Tidak Ada")))
+            support_tickets = st.slider("Jumlah Support Ticket", 0, 10, pv("support_tickets", 2))
         with t3:
-            refund_requested    = st.selectbox("Pernah Minta Refund?", [0,1], format_func=lambda x: "Ya" if x else "Tidak")
-            delivery_delay_days = st.slider("Delay Pengiriman (hari)", 0, 15, 3)
-            satisfaction_score  = st.slider("Satisfaction Score (1–5)", 1.0, 5.0, 3.5, 0.5)
-            nps_score           = st.slider("NPS Score (0–10)", 0, 10, 5)
+            refund_requested    = st.selectbox("Pernah Minta Refund?", [0,1],
+                                                index=pv("refund_requested", 0),
+                                                format_func=lambda x: "Ya" if x else "Tidak")
+            delivery_delay_days = st.slider("Delay Pengiriman (hari)", 0, 15, pv("delivery_delay_days", 3))
+            satisfaction_score  = st.slider("Satisfaction Score (1–5)", 1.0, 5.0, float(pv("satisfaction_score", 3.5)), 0.5)
+            nps_score           = st.slider("NPS Score (0–10)", 0, 10, pv("nps_score", 5))
 
         # ── Nilai ──
         st.markdown('<div style="font-size: 0.95rem; font-weight: 700; color: #364C84; margin-bottom: 0.8rem; border-bottom: 2px solid #EEF3FC; padding-bottom: 4px; display: flex; align-items: center; gap: 8px; margin-top: 1rem;"><span>📈</span> Nilai &amp; Marketing</div>', unsafe_allow_html=True)
         v1, v2 = st.columns(2)
         with v1:
-            marketing_spend_per_user   = st.slider("Marketing Spend per User ($)", 5.0, 30.0, 17.0, 0.5)
-            last_3_month_purchase_freq = st.slider("Frekuensi Beli 3 Bulan Terakhir", 0, 14, 7)
+            marketing_spend_per_user   = st.slider("Marketing Spend per User ($)", 5.0, 30.0, float(pv("marketing_spend_per_user", 17.0)), 0.5)
+            last_3_month_purchase_freq = st.slider("Frekuensi Beli 3 Bulan Terakhir", 0, 14, pv("last_3_month_purchase_freq", 7))
         with v2:
-            lifetime_value = st.number_input("Lifetime Value ($)", 0.0, 5000.0, 1200.0, 10.0)
+            lifetime_value = st.number_input("Lifetime Value ($)", 0.0, 5000.0, float(pv("lifetime_value", 1200.0)), 10.0)
 
         submitted = st.form_submit_button("🔮  Prediksi Sekarang", use_container_width=True)
 
-    # ── Hasil ─────────────────────────────────
+    # ══════════════════════════════════════════
+    #  HASIL PREDIKSI
+    # ══════════════════════════════════════════
     if submitted:
         raw = {
             "gender": gender, "age": age, "country": country, "city": city,
@@ -965,6 +1060,7 @@ elif page == "🔮  Prediksi Churn":
             churn_prob = proba[1]; safe_prob = proba[0]
 
         st.markdown('<div style="font-size: 1.1rem; font-weight: 700; color: #364C84; margin-top: 1.8rem; margin-bottom: 1.2rem; border-bottom: 2px solid #EEF3FC; padding-bottom: 6px;">📊 Hasil Analisis Prediksi</div>', unsafe_allow_html=True)
+
         r1, r2 = st.columns(2)
         with r1:
             if pred == 1:
@@ -982,11 +1078,11 @@ elif page == "🔮  Prediksi Churn":
                     <div class="pb-desc">Probabilitas pelanggan TIDAK churn</div>
                 </div>""", unsafe_allow_html=True)
             st.markdown("<br>", unsafe_allow_html=True)
-            st.caption(f"Churn: {churn_prob*100:.1f}%");   st.progress(float(churn_prob))
+            st.caption(f"Churn: {churn_prob*100:.1f}%");      st.progress(float(churn_prob))
             st.caption(f"Tidak Churn: {safe_prob*100:.1f}%"); st.progress(float(safe_prob))
 
         with r2:
-            st.markdown('<div style="font-size: 0.95rem; font-weight: 700; color: #364C84; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 6px;">💡 Rekomendasi Retensi</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 0.95rem; font-weight: 700; color: #364C84; margin-bottom: 0.8rem;">💡 Rekomendasi Retensi</div>', unsafe_allow_html=True)
             recoms = []
             if pred == 1:
                 if satisfaction_score < 3:         recoms.append(("📞","Hubungi pelanggan untuk survey kepuasan"))
@@ -1008,6 +1104,80 @@ elif page == "🔮  Prediksi Churn":
 
         with st.expander("📋 Ringkasan Input"):
             st.dataframe(pd.DataFrame([raw]), use_container_width=True, hide_index=True)
+
+        # ══════════════════════════════════════════
+        #  FEATURE IMPORTANCE
+        # ══════════════════════════════════════════
+        st.markdown('<div style="font-size: 1.1rem; font-weight: 700; color: #364C84; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #EEF3FC; padding-bottom: 6px;">🎯 Fitur Paling Berpengaruh dalam Model</div>', unsafe_allow_html=True)
+
+        try:
+            # Ambil feature importance dari model (Random Forest / Voting)
+            importances = None
+            if hasattr(model, 'feature_importances_'):
+                importances = model.feature_importances_
+            elif hasattr(model, 'estimators_'):
+                for name, est in model.estimators_:
+                    if hasattr(est, 'feature_importances_'):
+                        importances = est.feature_importances_
+                        break
+
+            if importances is not None and len(importances) == len(feature_names):
+                fi_df = pd.DataFrame({
+                    "Fitur": feature_names,
+                    "Importance": importances
+                }).sort_values("Importance", ascending=False).head(15)
+                fi_df["Persen"] = fi_df["Importance"] / fi_df["Importance"].sum() * 100
+
+                import matplotlib as mpl
+                rc_backup = mpl.rcParams.copy()
+                try:
+                    mpl.rcParams.update(mpl.rcParamsDefault)
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    colors_fi = ["#364C84" if i < 3 else "#95B1EE" if i < 7 else "#C8D8F5"
+                                 for i in range(len(fi_df))]
+                    bars = ax.barh(fi_df["Fitur"][::-1], fi_df["Persen"][::-1],
+                                   color=colors_fi[::-1], edgecolor='none', height=0.62)
+                    for bar, val in zip(bars, fi_df["Persen"][::-1]):
+                        ax.text(bar.get_width() + 0.2, bar.get_y() + bar.get_height()/2,
+                                f'{val:.1f}%', va='center', fontsize=9,
+                                color='#344054', fontweight='500')
+                    ax.set_xlabel("Kontribusi terhadap keputusan model (%)", fontsize=9, color='#344054')
+                    ax.set_title("Top 15 Fitur Paling Berpengaruh (Random Forest Feature Importance)",
+                                 fontsize=11, fontweight='bold', color='#101828', pad=12)
+                    ax.spines['top'].set_visible(False)
+                    ax.spines['right'].set_visible(False)
+                    ax.spines['left'].set_color('#EAECF0')
+                    ax.spines['bottom'].set_color('#EAECF0')
+                    ax.tick_params(colors='#667085', labelsize=9)
+                    ax.set_facecolor('white')
+                    fig.patch.set_facecolor('white')
+                    plt.tight_layout()
+                    st.pyplot(fig, use_container_width=True)
+                    plt.close(fig)
+                finally:
+                    mpl.rcParams.update(rc_backup)
+
+                # Top 3 kartu di bawah chart
+                top3 = fi_df.head(3)
+                medals = ["🥇","🥈","🥉"]
+                t3c1, t3c2, t3c3 = st.columns(3)
+                for col, medal, (_, row) in zip([t3c1, t3c2, t3c3], medals, top3.iterrows()):
+                    with col:
+                        st.markdown(f"""
+                        <div style="display:flex;align-items:center;gap:10px;background:#F8F9FD;
+                                    border:1px solid #EBF0FA;border-radius:10px;padding:0.7rem 1rem;">
+                            <span style="font-size:1.4rem;">{medal}</span>
+                            <div>
+                                <div style="font-size:0.85rem;font-weight:600;color:#101828;">{row['Fitur']}</div>
+                                <div style="font-size:0.75rem;color:#667085;">{row['Persen']:.1f}% kontribusi</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                st.info("ℹ️ Feature importance tidak tersedia untuk tipe model ini.")
+
+        except Exception as e:
+            st.warning(f"⚠️ Tidak dapat menampilkan feature importance: {e}")
 
 
 # ═════════════════════════════════════════════════════════════

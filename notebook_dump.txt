@@ -1,0 +1,1883 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 0 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 🛫 UAS BENGKEL KODING DATA SCIENCE
+
+
+
+
+---
+
+
+## Sales and Marketing Dataset
+
+---
+
+| Keterangan | Detail |
+|---|---|
+| **Nama** | Desvita Maharani |
+| **NIM** | A11.2023.15298 |
+| **Program** | Bengkel Koding Data Science |
+| **Dataset** | Sales and Marketing Dataset  |
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 1 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **PROGRESS 1**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 2 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **Bagian 1 - EDA**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 3 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Import Library
+
+================================================================================
+=== CELL 4 (code) ===
+================================================================================
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+
+pd.set_option('display.max_columns', None)
+sns.set_theme(style="whitegrid")
+plt.rcParams['figure.figsize'] = (10, 5)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 5 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Load Dataset & Tampilan Awal
+
+================================================================================
+=== CELL 6 (code) ===
+================================================================================
+# Berjalan di VSCode (lokal) - tidak perlu Google Drive mount
+# from google.colab import drive
+# drive.mount('/content/drive')
+
+================================================================================
+=== CELL 7 (code) ===
+================================================================================
+import os
+
+# Naik 1 level dari folder notebook/ ke ROOT project
+BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath('__file__')))
+DATASET_DIR = os.path.join(BASE_DIR, 'data')
+MODEL_DIR   = os.path.join(BASE_DIR, 'model')
+APP_DIR     = os.path.join(BASE_DIR, 'app')
+
+# Buat folder jika belum ada
+os.makedirs(DATASET_DIR, exist_ok=True)
+os.makedirs(MODEL_DIR,   exist_ok=True)
+os.makedirs(APP_DIR,     exist_ok=True)
+
+print('✅ Setup environment VSCode selesai!')
+print(f'   BASE_DIR    : {BASE_DIR}')
+print(f'   DATASET_DIR : {DATASET_DIR}')
+print(f'   MODEL_DIR   : {MODEL_DIR}')
+print(f'   APP_DIR     : {APP_DIR}')
+
+================================================================================
+=== CELL 8 (code) ===
+================================================================================
+import os
+
+# Path absolut dinamis berdasarkan lokasi notebook
+base_dir = os.path.dirname(os.path.abspath('__file__' if '__file__' in dir() else os.getcwd()))
+dataset_dir = os.path.join(os.path.dirname(os.getcwd()), 'dataset') if os.path.basename(os.getcwd()) == 'notebook' else os.path.join(os.getcwd(), 'dataset')
+
+# Fallback: path absolut langsung
+DATASET_PATH = r'c:\Users\Lenovo\OneDrive\Pictures\Documents\KULIAH\BENGKOD\UAS-Bengkel-Koding-DataScience\dataset'
+print(os.listdir(DATASET_PATH))
+
+================================================================================
+=== CELL 9 (code) ===
+================================================================================
+import os
+
+# Path absolut langsung ke file dataset
+DATASET_PATH = r'c:\Users\Lenovo\OneDrive\Pictures\Documents\KULIAH\BENGKOD\UAS-Bengkel-Koding-DataScience\dataset\Sales - Marketing customer dataset.csv'
+
+df = pd.read_csv(DATASET_PATH)
+
+print("Dataset berhasil dimuat!")
+print(f"   Jumlah baris : {df.shape[0]:,}")
+print(f"   Jumlah kolom : {df.shape[1]}")
+
+================================================================================
+=== CELL 10 (code) ===
+================================================================================
+print("\n📌 5 Baris Pertama:")
+display(df.head())
+
+================================================================================
+=== CELL 11 (code) ===
+================================================================================
+print("\n📌 Informasi Dataset:")
+df.info()
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 12 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Info & Statistik Deskriptif
+
+================================================================================
+=== CELL 13 (code) ===
+================================================================================
+print("\n📌 Statistik Deskriptif:")
+display(df.describe(include='all').T)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 14 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Missing Value & Duplikasi
+
+================================================================================
+=== CELL 15 (code) ===
+================================================================================
+missing = df.isnull().sum()
+missing_pct = (missing / len(df)) * 100
+
+missing_df = pd.DataFrame({
+    'Jumlah Missing': missing,
+    'Persentase (%)': round(missing_pct, 2)
+}).sort_values('Persentase (%)', ascending=False)
+
+display(missing_df[missing_df['Jumlah Missing'] > 0])
+
+================================================================================
+=== CELL 16 (code) ===
+================================================================================
+# Visualisasi
+cols_missing = missing_pct[missing_pct > 0]
+
+if len(cols_missing) > 0:
+    plt.figure(figsize=(12, 5))
+    cols_missing.sort_values(ascending=False).plot(
+        kind='bar', color='steelblue', edgecolor='black'
+    )
+    plt.title('Persentase Missing Value per Kolom', fontsize=14, fontweight='bold')
+    plt.xlabel('Kolom')
+    plt.ylabel('Persentase (%)')
+    plt.xticks(rotation=45, ha='right')
+    for i, v in enumerate(cols_missing.sort_values(ascending=False)):
+        plt.text(i, v + 0.05, f'{v:.2f}%', ha='center', fontsize=9)
+    plt.tight_layout()
+    plt.show()
+else:
+    print("\n✅ Tidak ada missing value dalam dataset!")
+
+================================================================================
+=== CELL 17 (code) ===
+================================================================================
+print(f"\n=== CEK DUPLIKASI ===")
+print(f"Jumlah baris duplikat : {df.duplicated().sum()}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 18 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Visualisasi Distribusi Target (Churn)
+
+================================================================================
+=== CELL 19 (code) ===
+================================================================================
+churn_counts = df['churn'].value_counts()
+churn_pct    = df['churn'].value_counts(normalize=True) * 100
+
+print("=== DISTRIBUSI TARGET CHURN ===")
+print(pd.DataFrame({
+    'Jumlah'        : churn_counts,
+    'Persentase (%)': churn_pct.round(2)
+}))
+
+# Visualisasi
+fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+
+# Bar chart
+axes[0].bar(['Tidak Churn (0)', 'Churn (1)'],
+            churn_counts.values,
+            color=['#2196F3', '#F44336'])
+for i, (val, pct) in enumerate(zip(churn_counts.values, churn_pct.values)):
+    axes[0].text(i, val + 100, f'{val:,}\n({pct:.1f}%)',
+                 ha='center', fontsize=11, fontweight='bold')
+axes[0].set_title('Distribusi Churn', fontsize=13, fontweight='bold')
+axes[0].set_ylabel('Jumlah Pelanggan')
+axes[0].set_ylim(0, max(churn_counts.values) * 1.15)
+
+# Pie chart
+axes[1].pie(churn_counts.values,
+            labels=['Tidak Churn (0)', 'Churn (1)'],
+            autopct='%1.1f%%',
+            colors=['#2196F3', '#F44336'],
+            startangle=90)
+axes[1].set_title('Proporsi Churn', fontsize=13, fontweight='bold')
+
+plt.suptitle('Distribusi Variabel Target - Churn', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+print("\n⚠️  Catatan: Data IMBALANCED — rasio Tidak Churn:Churn ≈ 5.5:1")
+print("     Fokus evaluasi pada F1-Score dan Recall kelas Churn (1)")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 20 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Analisis Outlier
+
+================================================================================
+=== CELL 21 (code) ===
+================================================================================
+num_cols = ['age', 'total_spent', 'avg_order_value', 'lifetime_value',
+            'avg_session_time', 'pages_per_session', 'total_visits',
+            'satisfaction_score', 'marketing_spend_per_user']
+
+fig, axes = plt.subplots(3, 3, figsize=(14, 10))
+axes = axes.flatten()
+
+for i, col in enumerate(num_cols):
+    axes[i].boxplot(df[col].dropna(), vert=True, patch_artist=True,
+                    boxprops=dict(facecolor='#90CAF9'))
+    axes[i].set_title(col, fontsize=10, fontweight='bold')
+    axes[i].set_ylabel('Nilai')
+
+plt.suptitle('Analisis Outlier - Boxplot Fitur Numerik',
+             fontsize=13, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+# Cek age negatif
+print("=== CEK ANOMALI age ===")
+print(f"Jumlah age negatif  : {(df['age'] < 0).sum()}")
+print(f"Jumlah age > 80     : {(df['age'] > 80).sum()}")
+print(f"Min age             : {df['age'].min()}")
+print(f"Max age             : {df['age'].max()}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 22 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Heatmap Korelasi
+
+================================================================================
+=== CELL 23 (code) ===
+================================================================================
+num_cols_corr = df.select_dtypes(include=[np.number]).columns.tolist()
+num_cols_corr.remove('customer_id')
+
+corr_matrix = df[num_cols_corr].corr()
+
+plt.figure(figsize=(14, 10))
+sns.heatmap(corr_matrix,
+            annot=True, fmt='.2f',
+            cmap='coolwarm', center=0,
+            linewidths=0.5,
+            annot_kws={'size': 8})
+plt.title('Heatmap Korelasi Fitur Numerik', fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+# Top korelasi terhadap churn
+print("=== TOP KORELASI TERHADAP CHURN ===")
+churn_corr = corr_matrix['churn'].drop('churn').abs().sort_values(ascending=False)
+display(churn_corr.head(10).to_frame('Korelasi Absolut'))
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 24 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#**Bagian 2 - Direct Modeling**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 25 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Melatih model secara langsung tanpa preprocessing dan tanpa hyperparameter tuning
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 26 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Persiapan Fitur & Target
+
+================================================================================
+=== CELL 27 (code) ===
+================================================================================
+print("=" * 60)
+print("     PERSIAPAN FITUR & TARGET (X dan y)")
+print("=" * 60)
+
+# Drop kolom non-numerik (object & datetime)
+cols_to_drop = ['gender', 'country', 'city', 'acquisition_channel',
+                'device_type', 'subscription_type', 'coupon_code',
+                'payment_method', 'signup_date', 'last_purchase_date',
+                'customer_id']
+
+df_direct = df.drop(columns=cols_to_drop)
+
+# Cek missing value sebelum dropna
+print(f"\n  Missing value sebelum dropna:")
+print(df_direct.isnull().sum()[df_direct.isnull().sum() > 0].to_string())
+
+# Drop semua baris yang masih ada NaN
+df_direct = df_direct.dropna()
+
+# Verifikasi tidak ada NaN tersisa
+print(f"\n  Missing value setelah dropna : {df_direct.isnull().sum().sum()}")
+print(f"  Shape setelah dropna         : {df_direct.shape}")
+
+# Tetapkan X dan y
+X = df_direct.drop(columns=['churn'])
+y = df_direct['churn']
+
+# Verifikasi final
+print(f"\n  ✅ Cek NaN di X : {pd.DataFrame(X).isnull().sum().sum()}")
+print(f"  Fitur prediktor (X) : {X.shape[1]} kolom")
+print(f"  Variabel target (y) : {y.shape[0]:,} baris")
+print(f"\n  Kolom X yang digunakan:")
+print(list(X.columns))
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 28 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Train Test Split
+
+================================================================================
+=== CELL 29 (code) ===
+================================================================================
+from sklearn.model_selection import train_test_split
+
+X_train_d, X_test_d, y_train_d, y_test_d = train_test_split(
+    X, y,                # ← pakai X dan y (bukan X_direct, y_direct)
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+print("=" * 60)
+print("           TRAIN TEST SPLIT")
+print("=" * 60)
+print(f"\n  Total data    : {len(X):,}")
+print(f"  Data latih    : {len(X_train_d):,} (80%)")
+print(f"  Data uji      : {len(X_test_d):,}  (20%)")
+print(f"\n  Distribusi y_train:")
+print(y_train_d.value_counts().to_string())
+print(f"\n  Distribusi y_test:")
+print(y_test_d.value_counts().to_string())
+print(f"\n  ✅ NaN di X_train_d : {pd.DataFrame(X_train_d).isnull().sum().sum()}")
+print(f"  ✅ NaN di X_test_d  : {pd.DataFrame(X_test_d).isnull().sum().sum()}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 30 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Definisi 3 Model
+
+================================================================================
+=== CELL 31 (code) ===
+================================================================================
+# =============================================
+# DEBUG STEP BY STEP
+# =============================================
+
+import numpy as np
+
+# Cek 1: NaN di X
+print("=" * 50)
+print("CEK 1 — NaN di X")
+print("=" * 50)
+x_df = pd.DataFrame(X_train_d)
+nan_cols = x_df.isnull().sum()
+print(nan_cols[nan_cols > 0])
+print(f"Total NaN: {x_df.isnull().sum().sum()}")
+
+# Cek 2: Cek inf
+print("\n" + "=" * 50)
+print("CEK 2 — Infinity values")
+print("=" * 50)
+inf_check = np.isinf(x_df.select_dtypes(include=np.number)).sum()
+print(inf_check[inf_check > 0])
+
+# Cek 3: Dtypes
+print("\n" + "=" * 50)
+print("CEK 3 — Dtype semua kolom")
+print("=" * 50)
+print(x_df.dtypes)
+
+================================================================================
+=== CELL 32 (code) ===
+================================================================================
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+
+# 1. Model Konvensional → Logistic Regression
+model_lr = LogisticRegression(random_state=42, max_iter=1000)
+
+# 2. Model Ensemble Bagging → Random Forest
+model_rf = RandomForestClassifier(random_state=42)
+
+# 3. Model Ensemble Voting → LR + SVM + KNN
+estimators = [
+    ('lr',  LogisticRegression(random_state=42, max_iter=1000)),
+    ('svm', SVC(probability=True, random_state=42)),
+    ('knn', KNeighborsClassifier())
+]
+model_voting = VotingClassifier(estimators=estimators, voting='soft')
+
+models = {
+    'Logistic Regression (Konvensional)' : model_lr,
+    'Random Forest (Ensemble Bagging)'   : model_rf,
+    'Voting Classifier (LR + SVM + KNN)' : model_voting
+}
+
+print("\n✅ Model yang akan dilatih:")
+for i, name in enumerate(models.keys(), 1):
+    print(f"   {i}. {name}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 33 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Training & Evaluasi Semua Model
+
+================================================================================
+=== CELL 34 (code) ===
+================================================================================
+from sklearn.metrics import (accuracy_score, precision_score,
+                              recall_score, f1_score,
+                              confusion_matrix, classification_report)
+import time
+
+print("=" * 60)
+print("       TRAINING & EVALUASI MODEL")
+print("=" * 60)
+
+results = {}
+
+for name, model in models.items():
+    print(f"\n⏳ Melatih: {name}...")
+
+    start    = time.time()
+    model.fit(X_train_d, y_train_d)   # ← pakai X_train_d, y_train_d
+    duration = time.time() - start
+
+    y_pred = model.predict(X_test_d)  # ← pakai X_test_d
+
+    acc  = accuracy_score(y_test_d, y_pred)
+    prec = precision_score(y_test_d, y_pred)
+    rec  = recall_score(y_test_d, y_pred)
+    f1   = f1_score(y_test_d, y_pred)
+
+    results[name] = {
+        'Accuracy' : acc,
+        'Precision': prec,
+        'Recall'   : rec,
+        'F1-Score' : f1,
+        'Waktu (s)': round(duration, 2)
+    }
+
+    print(f"   ✅ Selesai dalam {duration:.2f} detik")
+    print(f"   Accuracy : {acc:.4f} | Precision: {prec:.4f} | Recall: {rec:.4f} | F1: {f1:.4f}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 35 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Tabel Perbandingan Hasil
+
+================================================================================
+=== CELL 36 (code) ===
+================================================================================
+results_df = pd.DataFrame(results).T
+results_df = results_df.sort_values('F1-Score', ascending=False)
+
+display(results_df.style
+        .format({'Accuracy':'{:.4f}', 'Precision':'{:.4f}',
+                 'Recall':'{:.4f}', 'F1-Score':'{:.4f}'})
+        .background_gradient(subset=['Accuracy','Precision','Recall','F1-Score'],
+                             cmap='Greens')
+        .set_caption("Perbandingan Performa Direct Modeling"))
+
+# Visualisasi bar chart perbandingan
+metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
+x = np.arange(len(metrics))
+width = 0.25
+colors = ['#3498db', '#e74c3c', '#2ecc71']
+
+fig, ax = plt.subplots(figsize=(12, 6))
+for i, (name, row) in enumerate(results_df.iterrows()):
+    vals = [row[m] for m in metrics]
+    bars = ax.bar(x + i*width, vals, width, label=name, color=colors[i],
+                  edgecolor='black', alpha=0.85)
+    for bar, val in zip(bars, vals):
+        ax.text(bar.get_x() + bar.get_width()/2,
+                bar.get_height() + 0.005,
+                f'{val:.3f}', ha='center', fontsize=8, fontweight='bold')
+
+ax.set_xlabel('Metrik Evaluasi')
+ax.set_ylabel('Nilai')
+ax.set_title('Perbandingan Performa Direct Modeling', fontsize=14, fontweight='bold')
+ax.set_xticks(x + width)
+ax.set_xticklabels(metrics)
+ax.set_ylim(0, 1.1)
+ax.legend(loc='lower right', fontsize=8)
+ax.axhline(y=0.5, color='gray', linestyle='--', linewidth=0.8, label='Baseline 0.5')
+plt.tight_layout()
+plt.show()
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 37 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Confusion Matrix Semua Model
+
+================================================================================
+=== CELL 38 (code) ===
+================================================================================
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+short_names = ['Logistic\nRegression', 'Random\nForest', 'Voting\nClassifier']
+
+for ax, (name, model), short in zip(axes, models.items(), short_names):
+    y_pred = model.predict(X_test_d)
+    cm = confusion_matrix(y_test_d, y_pred)
+
+    sns.heatmap(
+        cm, annot=True, fmt='d', cmap='Blues',
+        xticklabels=['Pred: No Churn', 'Pred: Churn'],
+        yticklabels=['Act: No Churn', 'Act: Churn'],
+        ax=ax, linewidths=0.5
+    )
+    acc = accuracy_score(y_test_d, y_pred)
+    ax.set_title(f'{short}\nAccuracy: {acc:.4f}', fontsize=11, fontweight='bold')
+    ax.set_ylabel('Actual')
+    ax.set_xlabel('Predicted')
+
+plt.suptitle('Confusion Matrix — Direct Modeling', fontsize=14, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 39 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Classification Report Detail
+
+================================================================================
+=== CELL 40 (code) ===
+================================================================================
+for name, model in models.items():
+    y_pred = model.predict(X_test_d)
+    print(f"\n{'─'*50}")
+    print(f"📌 {name}")
+    print(f"{'─'*50}")
+    print(classification_report(y_test_d, y_pred,
+          target_names=['Tidak Churn (0)', 'Churn (1)']))
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 41 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+📊 Interpretasi Hasil Direct Modeling
+
+Kondisi Eksperimen
+- Kolom kategorikal & datetime di-drop karena tanpa preprocessing
+- Tidak ada hyperparameter tuning
+- Split: 80% train / 20% test (stratified)
+
+Hasil & Analisis
+| Model | Accuracy | F1-Score | Keterangan |
+|---|---|---|---|
+| Logistic Regression | 0.84 | 0.23 | Recall churn sangat rendah (0.15) |
+| Random Forest | 0.84 | 0.45 | Model terbaik di skenario ini |
+| Voting Classifier | 0.85 | 0.10 | Recall churn sangat buruk (0.05) |
+
+Kesimpulan
+- **Model terbaik Direct: Random Forest** (F1-Score 0.45)
+- Semua model kesulitan mendeteksi kelas Churn (1) karena:
+  1. Data **imbalanced** (churn hanya ~15%)
+  2. Banyak fitur informasi hilang karena kolom kategorikal di-drop
+- Performa diharapkan meningkat signifikan setelah preprocessing di Bagian 3
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 42 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **PROGRESS 2**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 43 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **Bagian 3 - Preprocessing**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 44 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Membangun model dan menghasilkan prediksi dengan data yang bersih.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 45 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Salin Dataset
+
+================================================================================
+=== CELL 46 (code) ===
+================================================================================
+df_prep = df.copy()
+
+print(f"✅ Dataset berhasil disalin ke df_prep")
+print(f"   Shape awal : {df_prep.shape}")
+print(f"   Kolom      : {list(df_prep.columns)}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 47 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Drop Fitur Tidak Relevan
+
+================================================================================
+=== CELL 48 (code) ===
+================================================================================
+print("=" * 60)
+print("     STEP 1 — DROP FITUR TIDAK RELEVAN")
+print("=" * 60)
+
+drop_cols = ['coupon_code']
+df_prep   = df_prep.drop(columns=drop_cols)
+
+print(f"\n  Kolom yang di-drop : {drop_cols}")
+print(f"\n  📌 Alasan drop 'coupon_code':")
+print(f"     - Missing value sangat tinggi : 40.89% (6.133 dari 15.000 baris)")
+print(f"     - Isi kolom hanya kode promo  : NEW20, REF10, SAVE15")
+print(f"     - Tidak mencerminkan perilaku pelanggan secara langsung")
+print(f"     - Tidak memiliki nilai prediktif signifikan terhadap churn")
+print(f"     - Berdasarkan analisis korelasi EDA, kontribusinya sangat rendah")
+print(f"\n  📌 Catatan:")
+print(f"     'customer_id' dipertahankan di df_prep, namun TIDAK akan")
+print(f"     dimasukkan sebagai fitur prediktor (X) karena hanya berfungsi")
+print(f"     sebagai identifier unik pelanggan, bukan atribut prediktif")
+print(f"\n  Shape setelah drop : {df_prep.shape}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 49 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Handling Data Duplicate
+
+================================================================================
+=== CELL 50 (code) ===
+================================================================================
+jumlah_duplikat = df_prep.duplicated().sum()
+print(f"\n  Jumlah baris duplikat : {jumlah_duplikat}")
+
+if jumlah_duplikat > 0:
+    df_prep = df_prep.drop_duplicates()
+    print(f"  ✅ {jumlah_duplikat} baris duplikat berhasil dihapus")
+else:
+    print(f"  ✅ Tidak ada duplikat dalam dataset — tidak ada yang dihapus")
+
+print(f"\n  Shape saat ini : {df_prep.shape}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 51 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Ekstraksi Fitur Datetime
+
+================================================================================
+=== CELL 52 (code) ===
+================================================================================
+print("=" * 60)
+print("     STEP 3 — EKSTRAKSI FITUR DATETIME")
+print("=" * 60)
+
+# Konversi ke tipe datetime
+df_prep['signup_date']        = pd.to_datetime(df_prep['signup_date'])
+df_prep['last_purchase_date'] = pd.to_datetime(df_prep['last_purchase_date'])
+
+# Referensi = tanggal transaksi terbaru di dataset
+ref_date = df_prep['last_purchase_date'].max()
+print(f"\n  Tanggal referensi : {ref_date.date()}")
+
+# Ekstraksi fitur baru
+df_prep['days_since_last_purchase'] = (ref_date - df_prep['last_purchase_date']).dt.days
+df_prep['tenure_days']              = (df_prep['last_purchase_date'] - df_prep['signup_date']).dt.days
+df_prep['signup_year']              = df_prep['signup_date'].dt.year
+df_prep['signup_month']             = df_prep['signup_date'].dt.month
+
+# Drop kolom datetime asli
+df_prep = df_prep.drop(columns=['signup_date', 'last_purchase_date'])
+
+print(f"\n  📌 Fitur baru yang dibuat:")
+print(f"  {'Fitur':<30} Keterangan")
+print(f"  {'─'*65}")
+print(f"  {'days_since_last_purchase':<30} Jumlah hari sejak transaksi terakhir")
+print(f"  {'tenure_days':<30} Lama berlangganan dalam hari")
+print(f"  {'signup_year':<30} Tahun pelanggan mendaftar")
+print(f"  {'signup_month':<30} Bulan pelanggan mendaftar")
+print(f"\n  Kolom datetime asli → di-drop")
+print(f"  Shape setelah ekstraksi : {df_prep.shape}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 53 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Handling Missing Value
+
+================================================================================
+=== CELL 54 (code) ===
+================================================================================
+print("=" * 60)
+print("      STEP 4 — PENANGANAN MISSING VALUE")
+print("=" * 60)
+
+# Cek sebelum
+print("\n  Missing Value sebelum penanganan:")
+mv_before = df_prep.isnull().sum()
+mv_before = mv_before[mv_before > 0]
+print(mv_before.to_string())
+
+# Imputasi
+df_prep['age']                = df_prep['age'].fillna(df_prep['age'].median())
+df_prep['total_spent']        = df_prep['total_spent'].fillna(df_prep['total_spent'].median())
+df_prep['satisfaction_score'] = df_prep['satisfaction_score'].fillna(df_prep['satisfaction_score'].median())
+df_prep['gender']             = df_prep['gender'].fillna(df_prep['gender'].mode()[0])
+
+# Ringkasan strategi
+print(f"\n  📌 Strategi Imputasi:")
+print(f"  {'Kolom':<22} {'Metode':<8} Alasan")
+print(f"  {'─'*72}")
+print(f"  {'age':<22} {'Median':<8} Numerik, ada outlier & nilai negatif → median lebih stabil")
+print(f"  {'total_spent':<22} {'Median':<8} Numerik, distribusi skewed → median lebih robust dari mean")
+print(f"  {'satisfaction_score':<22} {'Median':<8} Skala ordinal 1–5, median lebih representatif")
+print(f"  {'gender':<22} {'Modus':<8} Kategorikal → diisi nilai yang paling sering muncul")
+
+print(f"\n  📌 Kenapa IMPUTASI bukan DROP baris?")
+print(f"     → Drop baris akan menghilangkan ratusan data berharga")
+print(f"     → Imputasi mempertahankan informasi kolom lain pada baris tersebut")
+print(f"     → Median & modus robust terhadap distribusi tidak normal")
+
+mv_after = df_prep.isnull().sum().sum()
+print(f"\n  Total missing value tersisa : {mv_after}")
+print(f"  ✅ Semua missing value berhasil ditangani!")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 55 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Handling Outlier
+
+================================================================================
+=== CELL 56 (code) ===
+================================================================================
+print("=" * 60)
+print("       STEP 5 — PENANGANAN OUTLIER")
+print("=" * 60)
+
+outlier_cols = [
+    'age', 'total_spent', 'avg_session_time',
+    'pages_per_session', 'avg_order_value',
+    'marketing_spend_per_user', 'lifetime_value',
+    'days_since_last_purchase', 'tenure_days'
+]
+
+print(f"\n  Shape sebelum : {df_prep.shape}")
+
+# Khusus age: filter nilai negatif terlebih dahulu
+n_age_invalid = (df_prep['age'] < 0).sum()
+df_prep = df_prep[df_prep['age'] >= 0]
+print(f"\n  ⚠️  Ditemukan {n_age_invalid} data age < 0 (tidak valid) → dihapus")
+
+# Deteksi & Clipping
+print(f"\n  📌 Deteksi Outlier per Kolom (IQR Method):")
+print(f"  {'Kolom':<30} {'Outlier':>8}  {'Batas Bawah':>12}  {'Batas Atas':>12}")
+print(f"  {'─'*68}")
+
+for col in outlier_cols:
+    Q1    = df_prep[col].quantile(0.25)
+    Q3    = df_prep[col].quantile(0.75)
+    IQR   = Q3 - Q1
+    lower = Q1 - 1.5 * IQR
+    upper = Q3 + 1.5 * IQR
+    n_out = ((df_prep[col] < lower) | (df_prep[col] > upper)).sum()
+    print(f"  {col:<30} {n_out:>8}  {lower:>12.2f}  {upper:>12.2f}")
+    df_prep[col] = df_prep[col].clip(lower=lower, upper=upper)
+
+print(f"\n  📌 Metode  : IQR Clipping (Q1-1.5×IQR s/d Q3+1.5×IQR)")
+print(f"  📌 Alasan  : Clip lebih aman daripada drop agar data tidak banyak berkurang")
+print(f"\n  Shape setelah : {df_prep.shape}")
+print(f"  ✅ Outlier berhasil ditangani!")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 57 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Visualisasi Boxplot Setelah Outlier
+
+================================================================================
+=== CELL 58 (code) ===
+================================================================================
+vis_cols = ['age', 'total_spent', 'avg_session_time',
+            'avg_order_value', 'lifetime_value', 'days_since_last_purchase']
+titles   = ['Age', 'Total Spent', 'Avg Session Time',
+            'Avg Order Value', 'Lifetime Value', 'Days Since Last Purchase']
+
+fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+axes = axes.flatten()
+
+for i, (col, title) in enumerate(zip(vis_cols, titles)):
+    axes[i].boxplot(
+        df_prep[col], patch_artist=True,
+        boxprops=dict(facecolor='#3498db', color='navy'),
+        medianprops=dict(color='red', linewidth=2),
+        whiskerprops=dict(color='navy'),
+        capprops=dict(color='navy')
+    )
+    axes[i].set_title(f'{title}', fontsize=11, fontweight='bold')
+    axes[i].set_ylabel('Nilai')
+
+plt.suptitle('Distribusi Fitur Numerik Setelah Penanganan Outlier',
+             fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 59 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Encoding Fitur Kategorikal
+
+================================================================================
+=== CELL 60 (code) ===
+================================================================================
+print("=" * 60)
+print("      STEP 6 — ENCODING FITUR KATEGORIKAL")
+print("=" * 60)
+
+from sklearn.preprocessing import LabelEncoder
+
+cat_cols = df_prep.select_dtypes(include='object').columns.tolist()
+print(f"\n  Kolom kategorikal terdeteksi : {cat_cols}")
+
+binary_cols = []
+onehot_cols = []
+
+for col in cat_cols:
+    n = df_prep[col].nunique()
+    if n <= 2:
+        binary_cols.append(col)
+    else:
+        onehot_cols.append(col)
+
+print(f"\n  📌 Label Encoding   (≤2 nilai unik) : {binary_cols}")
+print(f"  📌 One-Hot Encoding (>2 nilai unik) : {onehot_cols}")
+
+# Label Encoding
+le = LabelEncoder()
+for col in binary_cols:
+    df_prep[col] = le.fit_transform(df_prep[col])
+    print(f"\n  ✅ Label Encoded  : '{col}'")
+
+# One-Hot Encoding
+df_prep = pd.get_dummies(df_prep, columns=onehot_cols, drop_first=True)
+print(f"\n  ✅ One-Hot Encoded : {onehot_cols}")
+
+# Konversi boolean → int
+bool_cols = df_prep.select_dtypes(include='bool').columns
+df_prep[bool_cols] = df_prep[bool_cols].astype(int)
+
+print(f"\n  Shape setelah encoding : {df_prep.shape}")
+print(f"  ✅ Semua fitur kategorikal berhasil di-encode!")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 61 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Ringkasan hasil Pre-Processing
+
+================================================================================
+=== CELL 62 (code) ===
+================================================================================
+print("=" * 60)
+print("        RINGKASAN HASIL PREPROCESSING")
+print("=" * 60)
+
+print(f"\n  Shape awal   : (15.000, 30)")
+print(f"  Shape akhir  : {df_prep.shape}")
+print(f"  Missing value tersisa : {df_prep.isnull().sum().sum()}")
+
+print(f"\n  Semua kolom setelah preprocessing ({df_prep.shape[1]} kolom):")
+print(f"  {'No':<4} {'Kolom':<45} {'Dtype'}")
+print(f"  {'─'*65}")
+for i, col in enumerate(df_prep.columns, 1):
+    print(f"  {i:<4} {col:<45} {df_prep[col].dtype}")
+
+print(f"\n  ✅ Data siap untuk modeling!")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 63 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##  Tetapkan X dan y
+
+================================================================================
+=== CELL 64 (code) ===
+================================================================================
+print("=" * 60)
+print("       PENETAPAN FITUR (X) DAN TARGET (y)")
+print("=" * 60)
+
+# customer_id → dikeluarkan (bukan fitur prediktor, hanya identifier)
+# churn       → variabel target (y)
+X_prep = df_prep.drop(columns=['churn', 'customer_id'])
+y_prep = df_prep['churn']
+
+print(f"\n  📌 Kolom yang dikeluarkan dari X:")
+print(f"     - 'churn'       : variabel target (y)")
+print(f"     - 'customer_id' : hanya ID unik, bukan fitur prediktif")
+
+print(f"\n  Jumlah fitur prediktor (X) : {X_prep.shape[1]} kolom")
+print(f"  Jumlah data (y)            : {y_prep.shape[0]:,} baris")
+
+print(f"\n  📌 Distribusi Target (y):")
+print(f"     Tidak Churn (0) : {(y_prep==0).sum():,} ({(y_prep==0).mean()*100:.2f}%)")
+print(f"     Churn       (1) : {(y_prep==1).sum():,} ({(y_prep==1).mean()*100:.2f}%)")
+
+print(f"\n  📌 Daftar Fitur X ({X_prep.shape[1]} kolom):")
+for i, col in enumerate(X_prep.columns, 1):
+    print(f"     {i:>2}. {col}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 65 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##Train Test Split
+
+================================================================================
+=== CELL 66 (code) ===
+================================================================================
+from sklearn.model_selection import train_test_split
+
+X_train_p, X_test_p, y_train_p, y_test_p = train_test_split(
+    X_prep, y_prep,
+    test_size=0.2,
+    random_state=42,
+    stratify=y_prep
+)
+
+print("=" * 60)
+print("              TRAIN TEST SPLIT")
+print("=" * 60)
+print(f"\n  Total data    : {len(X_prep):,}")
+print(f"  Data latih    : {len(X_train_p):,} (80%)")
+print(f"  Data uji      : {len(X_test_p):,}  (20%)")
+print(f"  Random state  : 42")
+print(f"  Stratify      : ✅ (proporsi churn seimbang di train & test)")
+
+print(f"\n  📌 Distribusi y_train:")
+print(f"     Tidak Churn (0) : {(y_train_p==0).sum():,} ({(y_train_p==0).mean()*100:.2f}%)")
+print(f"     Churn       (1) : {(y_train_p==1).sum():,} ({(y_train_p==1).mean()*100:.2f}%)")
+
+print(f"\n  📌 Distribusi y_test:")
+print(f"     Tidak Churn (0) : {(y_test_p==0).sum():,} ({(y_test_p==0).mean()*100:.2f}%)")
+print(f"     Churn       (1) : {(y_test_p==1).sum():,} ({(y_test_p==1).mean()*100:.2f}%)")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 67 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Scaling
+
+================================================================================
+=== CELL 68 (code) ===
+================================================================================
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+
+X_train_p = scaler.fit_transform(X_train_p)  # fit + transform → TRAIN
+X_test_p  = scaler.transform(X_test_p)        # transform saja  → TEST
+
+print("=" * 60)
+print("               SCALING FITUR")
+print("=" * 60)
+print(f"\n  Metode  : StandardScaler (z-score normalization)")
+print(f"  Formula : z = (x - μ) / σ  →  mean=0, std=1")
+print(f"\n  📌 Alasan menggunakan StandardScaler:")
+print(f"     - Logistic Regression sensitif terhadap perbedaan skala fitur")
+print(f"     - SVM (dalam VotingClassifier) sangat sensitif terhadap skala")
+print(f"     - Random Forest tidak sensitif, namun tidak dirugikan oleh scaling")
+print(f"\n  📌 Proses (cegah data leakage):")
+print(f"     - fit_transform(X_train) → scaler belajar mean & std dari TRAIN saja")
+print(f"     - transform(X_test)      → test di-scale pakai parameter dari train")
+print(f"     ✅ Tidak ada informasi test set yang bocor ke proses training!")
+print(f"\n  Shape X_train : {X_train_p.shape}")
+print(f"  Shape X_test  : {X_test_p.shape}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 69 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **PROGRESS 3**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 70 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **Modeling dengan Preprocessing**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 71 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Training Model
+> Melatih **3 model yang sama** dengan Bagian 2 menggunakan data hasil preprocessing
+> **tanpa hyperparameter tuning** — agar perbandingan antar skenario bersifat adil
+
+| No | Model | Kategori |
+|----|-------|----------|
+| 1 | Logistic Regression | Konvensional |
+| 2 | Random Forest | Ensemble Bagging |
+| 3 | Voting Classifier (LR + SVM + KNN) | Ensemble Voting |
+
+================================================================================
+=== CELL 72 (code) ===
+================================================================================
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (accuracy_score, precision_score,
+                              recall_score, f1_score,
+                              confusion_matrix, classification_report)
+import time
+
+print("=" * 60)
+print("             TRAINING MODEL")
+print("=" * 60)
+
+model_lr_p     = LogisticRegression(random_state=42, max_iter=1000)
+model_rf_p     = RandomForestClassifier(random_state=42)
+model_voting_p = VotingClassifier(
+    estimators=[
+        ('lr',  LogisticRegression(random_state=42, max_iter=1000)),
+        ('svm', SVC(probability=True, random_state=42)),
+        ('knn', KNeighborsClassifier())
+    ],
+    voting='soft'
+)
+
+models_prep = {
+    'Logistic Regression (Konvensional)' : model_lr_p,
+    'Random Forest (Ensemble Bagging)'   : model_rf_p,
+    'Voting Classifier (LR + SVM + KNN)' : model_voting_p
+}
+
+results_prep = {}
+
+for name, model in models_prep.items():
+    print(f"\n  ⏳ Melatih : {name}...")
+    start    = time.time()
+    model.fit(X_train_p, y_train_p)
+    duration = time.time() - start
+    y_pred   = model.predict(X_test_p)
+
+    acc  = accuracy_score(y_test_p, y_pred)
+    prec = precision_score(y_test_p, y_pred)
+    rec  = recall_score(y_test_p, y_pred)
+    f1   = f1_score(y_test_p, y_pred)
+
+    results_prep[name] = {
+        'Accuracy' : acc,
+        'Precision': prec,
+        'Recall'   : rec,
+        'F1-Score' : f1,
+        'Waktu (s)': round(duration, 2)
+    }
+    print(f"  ✅ Selesai {duration:.2f}s | Acc: {acc:.4f} | "
+          f"Prec: {prec:.4f} | Rec: {rec:.4f} | F1: {f1:.4f}")
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 73 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## **Evaluasi Model**
+
+================================================================================
+=== CELL 74 (code) ===
+================================================================================
+print("=" * 60)
+print("        PERBANDINGAN PERFORMA MODEL")
+print("=" * 60)
+
+results_prep_df = pd.DataFrame(results_prep).T
+results_prep_df = results_prep_df.sort_values('F1-Score', ascending=False)
+
+display(results_prep_df.style
+        .format({'Accuracy':'{:.4f}', 'Precision':'{:.4f}',
+                 'Recall':'{:.4f}', 'F1-Score':'{:.4f}'})
+        .background_gradient(
+            subset=['Accuracy','Precision','Recall','F1-Score'],
+            cmap='Greens')
+        .set_caption("Perbandingan Performa — Modeling dengan Preprocessing"))
+
+# Bar chart
+metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
+x       = np.arange(len(metrics))
+width   = 0.25
+colors  = ['#3498db', '#e74c3c', '#2ecc71']
+
+fig, ax = plt.subplots(figsize=(13, 6))
+for i, (name, row) in enumerate(results_prep_df.iterrows()):
+    vals = [row[m] for m in metrics]
+    bars = ax.bar(x + i*width, vals, width, label=name,
+                  color=colors[i], edgecolor='black', alpha=0.85)
+    for bar, val in zip(bars, vals):
+        ax.text(bar.get_x() + bar.get_width()/2,
+                bar.get_height() + 0.005,
+                f'{val:.3f}', ha='center', fontsize=8, fontweight='bold')
+
+ax.set_xlabel('Metrik Evaluasi')
+ax.set_ylabel('Nilai')
+ax.set_title('Perbandingan Performa — Modeling dengan Preprocessing',
+             fontsize=13, fontweight='bold')
+ax.set_xticks(x + width)
+ax.set_xticklabels(metrics)
+ax.set_ylim(0, 1.15)
+ax.legend(loc='lower right', fontsize=8)
+ax.axhline(y=0.5, color='gray', linestyle='--', linewidth=0.8, alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+================================================================================
+=== CELL 75 (code) ===
+================================================================================
+print("=" * 60)
+print("             CONFUSION MATRIX")
+print("=" * 60)
+
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+short_names = ['Logistic\nRegression', 'Random\nForest', 'Voting\nClassifier']
+
+for ax, (name, model), short in zip(axes, models_prep.items(), short_names):
+    y_pred = model.predict(X_test_p)
+    cm     = confusion_matrix(y_test_p, y_pred)
+    sns.heatmap(
+        cm, annot=True, fmt='d', cmap='Blues',
+        xticklabels=['Pred: No Churn', 'Pred: Churn'],
+        yticklabels=['Act: No Churn', 'Act: Churn'],
+        ax=ax, linewidths=0.5
+    )
+    acc = accuracy_score(y_test_p, y_pred)
+    ax.set_title(f'{short}\nAccuracy: {acc:.4f}',
+                 fontsize=11, fontweight='bold')
+    ax.set_ylabel('Actual')
+    ax.set_xlabel('Predicted')
+
+plt.suptitle('Confusion Matrix — Modeling dengan Preprocessing',
+             fontsize=14, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+================================================================================
+=== CELL 76 (code) ===
+================================================================================
+print("=" * 60)
+print("          CLASSIFICATION REPORT DETAIL")
+print("=" * 60)
+
+for name, model in models_prep.items():
+    y_pred = model.predict(X_test_p)
+    print(f"\n{'─'*55}")
+    print(f"  📌 {name}")
+    print(f"{'─'*55}")
+    print(classification_report(
+        y_test_p, y_pred,
+        target_names=['Tidak Churn (0)', 'Churn (1)']
+    ))
+
+================================================================================
+=== CELL 77 (code) ===
+================================================================================
+print("=" * 60)
+print("     PERBANDINGAN: DIRECT vs PREPROCESSING")
+print("=" * 60)
+
+f1_direct = [results[k]['F1-Score'] for k in results.keys()]
+f1_prep   = [results_prep[k]['F1-Score'] for k in results_prep.keys()]
+model_names_short = ['Logistic\nRegression', 'Random\nForest', 'Voting\nClassifier']
+
+x     = np.arange(len(model_names_short))
+width = 0.35
+
+fig, ax = plt.subplots(figsize=(11, 6))
+bars1 = ax.bar(x - width/2, f1_direct, width,
+               label='Direct (Bagian 2)',
+               color='#e74c3c', edgecolor='black', alpha=0.85)
+bars2 = ax.bar(x + width/2, f1_prep, width,
+               label='Preprocessing (Bagian 3)',
+               color='#2ecc71', edgecolor='black', alpha=0.85)
+
+for bar, val in zip(bars1, f1_direct):
+    ax.text(bar.get_x() + bar.get_width()/2,
+            bar.get_height() + 0.008,
+            f'{val:.3f}', ha='center', fontsize=10,
+            fontweight='bold', color='#c0392b')
+for bar, val in zip(bars2, f1_prep):
+    ax.text(bar.get_x() + bar.get_width()/2,
+            bar.get_height() + 0.008,
+            f'{val:.3f}', ha='center', fontsize=10,
+            fontweight='bold', color='#27ae60')
+
+ax.set_xlabel('Model')
+ax.set_ylabel('F1-Score')
+ax.set_title('Perbandingan F1-Score: Direct vs Preprocessing',
+             fontsize=13, fontweight='bold')
+ax.set_xticks(x)
+ax.set_xticklabels(model_names_short)
+ax.set_ylim(0, 1.0)
+ax.legend()
+ax.axhline(y=0.5, color='gray', linestyle='--', linewidth=0.8)
+plt.tight_layout()
+plt.show()
+
+# Tabel delta
+print(f"\n  {'Model':<40} {'Direct':>8} {'Prep':>8} {'Delta':>10}")
+print(f"  {'─'*70}")
+for name, f1_d, f1_p in zip(results.keys(), f1_direct, f1_prep):
+    delta = f1_p - f1_d
+    arah  = '🔺' if delta > 0 else '🔻'
+    print(f"  {name:<40} {f1_d:>8.4f} {f1_p:>8.4f}   {arah} {delta:>+.4f}")
+
+================================================================================
+=== CELL 78 (code) ===
+================================================================================
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 79 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **PROGRESS 4**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 80 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **Bagian 4 - Hyperparameter Tuning & Feature Selection**
+> Unit Kompetensi: Mengoptimalkan kinerja model melalui hyperparameter tuning.
+
+Pada bagian ini dilakukan optimasi model melalui 3 tahap utama:
+1. **Feature Importance** — identifikasi fitur paling berpengaruh
+2. **Hyperparameter Tuning** — cari kombinasi parameter terbaik tiap model
+3. **Evaluasi Final** — bandingkan 9 model dari 3 skenario eksperimen
+
+### Target Output:
+| Skenario | Model | Total |
+|----------|-------|-------|
+| Direct (Bagian 2) | LR, RF, Voting | 3 model |
+| Preprocessing (Bagian 3) | LR, RF, Voting | 3 model |
+| Hyperparameter Tuning (Bagian 4) | LR, RF, Voting | 3 model |
+| **Total** | | **9 model** |
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 81 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## **Analisis Feature Importance**
+> Menentukan fitur mana yang paling berpengaruh terhadap prediksi churn
+> menggunakan Random Forest sebagai estimator feature importance
+
+================================================================================
+=== CELL 82 (code) ===
+================================================================================
+print('=' * 60)
+print('       STEP 1 — ANALISIS FEATURE IMPORTANCE')
+print('=' * 60)
+
+import time
+import warnings
+warnings.filterwarnings('ignore')
+
+# Gunakan Random Forest dari Bagian 3 (sudah ditraining dengan data bersih)
+feature_names = X_prep.columns.tolist()
+importances   = model_rf_p.feature_importances_
+indices       = np.argsort(importances)[::-1]
+
+# Buat dataframe feature importance
+fi_df = pd.DataFrame({
+    'Fitur'      : [feature_names[i] for i in indices],
+    'Importance' : importances[indices]
+})
+
+print(f'\n  Total fitur : {len(feature_names)}')
+print(f'\n  📌 Top 20 Fitur Terpenting:')
+print(f'\n  {"Rank":<6} {"Fitur":<45} {"Importance":>12}')
+print(f'  {"─"*65}')
+for i, row in fi_df.head(20).iterrows():
+    bar = '█' * int(row['Importance'] * 200)
+    print(f'  {i+1:<6} {row["Fitur"]:<45} {row["Importance"]:>10.4f}  {bar}')
+
+# Visualisasi Top 20
+fig, ax = plt.subplots(figsize=(12, 8))
+colors  = ['#e74c3c' if i < 5 else '#3498db' if i < 10 else '#95a5a6'
+           for i in range(20)]
+
+bars = ax.barh(
+    fi_df['Fitur'].head(20)[::-1],
+    fi_df['Importance'].head(20)[::-1],
+    color=colors[::-1], edgecolor='black', alpha=0.85
+)
+for bar, val in zip(bars, fi_df['Importance'].head(20)[::-1]):
+    ax.text(bar.get_width() + 0.001, bar.get_y() + bar.get_height()/2,
+            f'{val:.4f}', va='center', fontsize=9)
+
+ax.set_xlabel('Feature Importance Score')
+ax.set_title('Top 20 Feature Importance — Random Forest',
+             fontsize=13, fontweight='bold')
+ax.axvline(x=fi_df['Importance'].mean(), color='red',
+           linestyle='--', linewidth=1.5,
+           label=f'Mean = {fi_df["Importance"].mean():.4f}')
+ax.legend()
+plt.tight_layout()
+plt.show()
+
+top_features = fi_df['Fitur'].head(20).tolist()
+print(f'\n  ✅ Top 20 fitur tersimpan untuk referensi tuning')
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 83 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## **Hyperparameter Tuning**
+> Mencari kombinasi parameter terbaik untuk masing-masing model
+> menggunakan **RandomizedSearchCV** (lebih efisien dari GridSearchCV untuk data besar)
+>
+> Data yang digunakan: hasil preprocessing dari Bagian 3 (X_train_p, X_test_p)
+
+================================================================================
+=== CELL 84 (code) ===
+================================================================================
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.linear_model import LogisticRegression
+
+print('=' * 60)
+print('    TUNING 1 — LOGISTIC REGRESSION')
+print('=' * 60)
+
+param_grid_lr = {
+    'C'           : [0.001, 0.01, 0.1, 1, 10, 100],
+    'penalty'     : ['l1', 'l2'],
+    'solver'      : ['liblinear', 'saga'],
+    'max_iter'    : [500, 1000, 2000],
+    'class_weight': [None, 'balanced']
+}
+
+print(f'\n  📌 Parameter Grid:')
+for k, v in param_grid_lr.items():
+    print(f'     {k:<15} : {v}')
+
+rs_lr = RandomizedSearchCV(
+    estimator           = LogisticRegression(random_state=42),
+    param_distributions = param_grid_lr,
+    n_iter              = 30,
+    cv                  = 5,
+    scoring             = 'f1',
+    random_state        = 42,
+    n_jobs              = -1,
+    verbose             = 0
+)
+
+print(f'\n  ⏳ Menjalankan RandomizedSearchCV (n_iter=30, cv=5)...')
+start = time.time()
+rs_lr.fit(X_train_p, y_train_p)
+duration = time.time() - start
+
+print(f'  ✅ Selesai dalam {duration:.2f} detik')
+print(f'\n  📌 Best Parameters:')
+for k, v in rs_lr.best_params_.items():
+    print(f'     {k:<15} : {v}')
+print(f'\n  Best CV F1-Score : {rs_lr.best_score_:.4f}')
+
+================================================================================
+=== CELL 85 (code) ===
+================================================================================
+from sklearn.ensemble import RandomForestClassifier
+
+print('=' * 60)
+print('      TUNING 2 — RANDOM FOREST')
+print('=' * 60)
+
+param_grid_rf = {
+    'n_estimators'     : [100, 200, 300, 500],
+    'max_depth'        : [None, 5, 10, 15, 20],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf' : [1, 2, 4],
+    'max_features'     : ['sqrt', 'log2'],
+    'class_weight'     : [None, 'balanced']
+}
+
+print(f'\n  📌 Parameter Grid:')
+for k, v in param_grid_rf.items():
+    print(f'     {k:<20} : {v}')
+
+rs_rf = RandomizedSearchCV(
+    estimator           = RandomForestClassifier(random_state=42),
+    param_distributions = param_grid_rf,
+    n_iter              = 30,
+    cv                  = 5,
+    scoring             = 'f1',
+    random_state        = 42,
+    n_jobs              = -1,
+    verbose             = 0
+)
+
+print(f'\n  ⏳ Menjalankan RandomizedSearchCV (n_iter=30, cv=5)...')
+start = time.time()
+rs_rf.fit(X_train_p, y_train_p)
+duration = time.time() - start
+
+print(f'  ✅ Selesai dalam {duration:.2f} detik')
+print(f'\n  📌 Best Parameters:')
+for k, v in rs_rf.best_params_.items():
+    print(f'     {k:<20} : {v}')
+print(f'\n  Best CV F1-Score : {rs_rf.best_score_:.4f}')
+
+================================================================================
+=== CELL 86 (code) ===
+================================================================================
+from sklearn.ensemble import VotingClassifier
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+
+print('=' * 60)
+print('     TUNING 3 — VOTING CLASSIFIER')
+print('=' * 60)
+
+param_grid_voting = {
+    'lr__C'            : [0.01, 0.1, 1, 10],
+    'lr__max_iter'     : [500, 1000],
+    'svm__C'           : [0.1, 1, 10],
+    'svm__kernel'      : ['rbf', 'linear'],
+    'knn__n_neighbors' : [3, 5, 7, 11],
+    'knn__weights'     : ['uniform', 'distance']
+}
+
+print(f'\n  📌 Parameter Grid:')
+for k, v in param_grid_voting.items():
+    print(f'     {k:<25} : {v}')
+
+voting_estimators = [
+    ('lr',  LogisticRegression(random_state=42)),
+    ('svm', SVC(probability=True, random_state=42)),
+    ('knn', KNeighborsClassifier())
+]
+voting_clf = VotingClassifier(estimators=voting_estimators, voting='soft')
+
+rs_voting = RandomizedSearchCV(
+    estimator           = voting_clf,
+    param_distributions = param_grid_voting,
+    n_iter              = 20,
+    cv                  = 5,
+    scoring             = 'f1',
+    random_state        = 42,
+    n_jobs              = -1,
+    verbose             = 0
+)
+
+print(f'\n  ⏳ Menjalankan RandomizedSearchCV (n_iter=20, cv=5)...')
+print(f'  ⚠️  Proses ini mungkin memakan waktu beberapa menit...')
+start = time.time()
+rs_voting.fit(X_train_p, y_train_p)
+duration = time.time() - start
+
+print(f'  ✅ Selesai dalam {duration:.2f} detik')
+print(f'\n  📌 Best Parameters:')
+for k, v in rs_voting.best_params_.items():
+    print(f'     {k:<25} : {v}')
+print(f'\n  Best CV F1-Score : {rs_voting.best_score_:.4f}')
+
+================================================================================
+=== CELL 87 (code) ===
+================================================================================
+print('=' * 60)
+print('      RINGKASAN BEST PARAMETERS')
+print('=' * 60)
+
+tuning_results = {
+    'Logistic Regression' : rs_lr,
+    'Random Forest'       : rs_rf,
+    'Voting Classifier'   : rs_voting
+}
+
+for name, rs in tuning_results.items():
+    print(f'\n  📌 {name}')
+    print(f'  {"─"*50}')
+    print(f'  Best CV F1-Score : {rs.best_score_:.4f}')
+    print(f'  Best Parameters  :')
+    for k, v in rs.best_params_.items():
+        print(f'     {k:<25} : {v}')
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 88 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## **Training Best Estimator**
+> Melatih ulang best estimator hasil tuning menggunakan data latih
+> untuk menghasilkan model dengan konfigurasi optimal
+
+================================================================================
+=== CELL 89 (code) ===
+================================================================================
+from sklearn.metrics import (accuracy_score, precision_score,
+                              recall_score, f1_score,
+                              confusion_matrix, classification_report)
+
+print('=' * 60)
+print('         TRAINING BEST ESTIMATOR')
+print('=' * 60)
+
+best_lr     = rs_lr.best_estimator_
+best_rf     = rs_rf.best_estimator_
+best_voting = rs_voting.best_estimator_
+
+best_models = {
+    'Logistic Regression (Tuned)' : best_lr,
+    'Random Forest (Tuned)'       : best_rf,
+    'Voting Classifier (Tuned)'   : best_voting
+}
+
+results_tuned = {}
+
+for name, model in best_models.items():
+    print(f'\n  ⏳ Melatih ulang : {name}...')
+    start    = time.time()
+    model.fit(X_train_p, y_train_p)
+    duration = time.time() - start
+    y_pred   = model.predict(X_test_p)
+
+    acc  = accuracy_score(y_test_p, y_pred)
+    prec = precision_score(y_test_p, y_pred)
+    rec  = recall_score(y_test_p, y_pred)
+    f1   = f1_score(y_test_p, y_pred)
+
+    results_tuned[name] = {
+        'Accuracy' : acc,
+        'Precision': prec,
+        'Recall'   : rec,
+        'F1-Score' : f1,
+        'Waktu (s)': round(duration, 2)
+    }
+    print(f'  ✅ Selesai {duration:.2f}s | Acc: {acc:.4f} | '
+          f'Prec: {prec:.4f} | Rec: {rec:.4f} | F1: {f1:.4f}')
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 90 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## **Evaluasi Model Tuned**
+
+================================================================================
+=== CELL 91 (code) ===
+================================================================================
+print('=' * 60)
+print('     PERBANDINGAN PERFORMA MODEL TUNED')
+print('=' * 60)
+
+results_tuned_df = pd.DataFrame(results_tuned).T
+results_tuned_df = results_tuned_df.sort_values('F1-Score', ascending=False)
+
+display(results_tuned_df.style
+        .format({'Accuracy':'{:.4f}', 'Precision':'{:.4f}',
+                 'Recall':'{:.4f}', 'F1-Score':'{:.4f}'})
+        .background_gradient(
+            subset=['Accuracy','Precision','Recall','F1-Score'],
+            cmap='Oranges')
+        .set_caption('Perbandingan Performa — Hyperparameter Tuning'))
+
+# Bar chart
+metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
+x       = np.arange(len(metrics))
+width   = 0.25
+colors  = ['#3498db', '#e74c3c', '#2ecc71']
+
+fig, ax = plt.subplots(figsize=(13, 6))
+for i, (name, row) in enumerate(results_tuned_df.iterrows()):
+    vals = [row[m] for m in metrics]
+    bars = ax.bar(x + i*width, vals, width, label=name,
+                  color=colors[i], edgecolor='black', alpha=0.85)
+    for bar, val in zip(bars, vals):
+        ax.text(bar.get_x() + bar.get_width()/2,
+                bar.get_height() + 0.005,
+                f'{val:.3f}', ha='center', fontsize=8, fontweight='bold')
+
+ax.set_xlabel('Metrik Evaluasi')
+ax.set_ylabel('Nilai')
+ax.set_title('Perbandingan Performa — Hyperparameter Tuning',
+             fontsize=13, fontweight='bold')
+ax.set_xticks(x + width)
+ax.set_xticklabels(metrics)
+ax.set_ylim(0, 1.15)
+ax.legend(loc='lower right', fontsize=8)
+ax.axhline(y=0.5, color='gray', linestyle='--', linewidth=0.8, alpha=0.7)
+plt.tight_layout()
+plt.show()
+
+================================================================================
+=== CELL 92 (code) ===
+================================================================================
+print('=' * 60)
+print('        CONFUSION MATRIX — TUNED MODELS')
+print('=' * 60)
+
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+short_names = ['Logistic\nRegression\n(Tuned)',
+               'Random\nForest\n(Tuned)',
+               'Voting\nClassifier\n(Tuned)']
+
+for ax, (name, model), short in zip(axes, best_models.items(), short_names):
+    y_pred = model.predict(X_test_p)
+    cm     = confusion_matrix(y_test_p, y_pred)
+    sns.heatmap(
+        cm, annot=True, fmt='d', cmap='Oranges',
+        xticklabels=['Pred: No Churn', 'Pred: Churn'],
+        yticklabels=['Act: No Churn', 'Act: Churn'],
+        ax=ax, linewidths=0.5
+    )
+    acc = accuracy_score(y_test_p, y_pred)
+    ax.set_title(f'{short}\nAccuracy: {acc:.4f}',
+                 fontsize=10, fontweight='bold')
+    ax.set_ylabel('Actual')
+    ax.set_xlabel('Predicted')
+
+plt.suptitle('Confusion Matrix — Hyperparameter Tuning',
+             fontsize=14, fontweight='bold', y=1.02)
+plt.tight_layout()
+plt.show()
+
+================================================================================
+=== CELL 93 (code) ===
+================================================================================
+print('=' * 60)
+print('    CLASSIFICATION REPORT — TUNED MODELS')
+print('=' * 60)
+
+for name, model in best_models.items():
+    y_pred = model.predict(X_test_p)
+    print(f'\n{"─"*55}')
+    print(f'  📌 {name}')
+    print(f'{"─"*55}')
+    print(classification_report(
+        y_test_p, y_pred,
+        target_names=['Tidak Churn (0)', 'Churn (1)']
+    ))
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 94 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## **Perbandingan Akhir — 9 Model**
+> Membandingkan seluruh 9 model dari 3 skenario eksperimen untuk
+> mengidentifikasi model terbaik yang akan di-deploy
+
+================================================================================
+=== CELL 95 (code) ===
+================================================================================
+print('=' * 60)
+print('        PERBANDINGAN AKHIR — 9 MODEL')
+print('=' * 60)
+
+# Gabungkan semua hasil
+all_results = {}
+for name, res in results.items():
+    all_results[f'[Direct] {name}'] = res
+for name, res in results_prep.items():
+    all_results[f'[Prep] {name}'] = res
+for name, res in results_tuned.items():
+    all_results[f'[Tuned] {name}'] = res
+
+all_df = pd.DataFrame(all_results).T
+all_df = all_df.sort_values('F1-Score', ascending=False)
+
+print(f'\n  📌 Tabel Perbandingan Lengkap 9 Model:')
+display(all_df.style
+        .format({'Accuracy':'{:.4f}', 'Precision':'{:.4f}',
+                 'Recall':'{:.4f}', 'F1-Score':'{:.4f}'})
+        .background_gradient(
+            subset=['Accuracy','Precision','Recall','F1-Score'],
+            cmap='RdYlGn')
+        .set_caption('Perbandingan Performa — 9 Model dari 3 Skenario'))
+
+best_model_name = all_df['F1-Score'].idxmax()
+best_f1         = all_df['F1-Score'].max()
+print(f'\n  🏆 MODEL TERBAIK : {best_model_name}')
+print(f'     F1-Score      : {best_f1:.4f}')
+print(f'     Accuracy      : {all_df.loc[best_model_name, "Accuracy"]:.4f}')
+print(f'     Precision     : {all_df.loc[best_model_name, "Precision"]:.4f}')
+print(f'     Recall        : {all_df.loc[best_model_name, "Recall"]:.4f}')
+
+================================================================================
+=== CELL 96 (code) ===
+================================================================================
+from matplotlib.patches import Patch
+
+fig, axes = plt.subplots(1, 2, figsize=(18, 7))
+
+# Plot 1 — F1 Score semua 9 model (horizontal bar)
+colors_map = {'[Direct]': '#e74c3c', '[Prep]': '#2ecc71', '[Tuned]': '#f39c12'}
+bar_colors = [colors_map[name.split(']')[0]+']'] for name in all_df.index]
+
+bars = axes[0].barh(
+    all_df.index[::-1],
+    all_df['F1-Score'][::-1],
+    color=bar_colors[::-1],
+    edgecolor='black', alpha=0.85
+)
+for bar, val in zip(bars, all_df['F1-Score'][::-1]):
+    axes[0].text(bar.get_width() + 0.003,
+                 bar.get_y() + bar.get_height()/2,
+                 f'{val:.4f}', va='center', fontsize=9, fontweight='bold')
+
+axes[0].set_xlabel('F1-Score')
+axes[0].set_title('F1-Score — 9 Model', fontsize=12, fontweight='bold')
+axes[0].axvline(x=0.5, color='gray', linestyle='--', linewidth=1)
+axes[0].set_xlim(0, 1.1)
+legend_elements = [
+    Patch(facecolor='#e74c3c', label='Direct Modeling'),
+    Patch(facecolor='#2ecc71', label='Preprocessing'),
+    Patch(facecolor='#f39c12', label='Hyperparameter Tuning')
+]
+axes[0].legend(handles=legend_elements, loc='lower right')
+
+# Plot 2 — Grouped bar per skenario
+skenario_names = ['LR', 'RF', 'Voting']
+f1_s1 = [results[k]['F1-Score'] for k in results.keys()]
+f1_s2 = [results_prep[k]['F1-Score'] for k in results_prep.keys()]
+f1_s3 = [results_tuned[k]['F1-Score'] for k in results_tuned.keys()]
+
+x     = np.arange(len(skenario_names))
+width = 0.25
+
+b1 = axes[1].bar(x - width, f1_s1, width, label='Direct',
+                  color='#e74c3c', edgecolor='black', alpha=0.85)
+b2 = axes[1].bar(x,          f1_s2, width, label='Preprocessing',
+                  color='#2ecc71', edgecolor='black', alpha=0.85)
+b3 = axes[1].bar(x + width,  f1_s3, width, label='Tuned',
+                  color='#f39c12', edgecolor='black', alpha=0.85)
+
+for bars_g, vals in [(b1, f1_s1), (b2, f1_s2), (b3, f1_s3)]:
+    for bar, val in zip(bars_g, vals):
+        axes[1].text(bar.get_x() + bar.get_width()/2,
+                     bar.get_height() + 0.008,
+                     f'{val:.3f}', ha='center', fontsize=8, fontweight='bold')
+
+axes[1].set_xlabel('Model')
+axes[1].set_ylabel('F1-Score')
+axes[1].set_title('Perbandingan F1-Score per Skenario',
+                   fontsize=12, fontweight='bold')
+axes[1].set_xticks(x)
+axes[1].set_xticklabels(skenario_names)
+axes[1].set_ylim(0, 1.0)
+axes[1].legend()
+axes[1].axhline(y=0.5, color='gray', linestyle='--', linewidth=0.8)
+
+plt.suptitle('Perbandingan Performa — 9 Model dari 3 Skenario',
+             fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+================================================================================
+=== CELL 97 (code) ===
+================================================================================
+import joblib
+import os
+
+print('=' * 60)
+print('          SIMPAN MODEL TERBAIK')
+print('=' * 60)
+
+# Map nama ke objek model
+model_map = {}
+for name, model in models.items():
+    model_map[f'[Direct] {name}'] = model
+for name, model in models_prep.items():
+    model_map[f'[Prep] {name}'] = model
+for name, model in best_models.items():
+    model_map[f'[Tuned] {name}'] = model
+
+best_model_obj = model_map[best_model_name]
+
+# Simpan ke folder model lokal
+save_dir = r'c:\Users\Lenovo\OneDrive\Pictures\Documents\KULIAH\BENGKOD\UAS-Bengkel-Koding-DataScience\model'
+os.makedirs(save_dir, exist_ok=True)
+
+# Path file output
+model_path   = os.path.join(save_dir, 'best_model.pkl')
+scaler_path  = os.path.join(save_dir, 'scaler.pkl')
+feature_path = os.path.join(save_dir, 'feature_names.pkl')
+
+joblib.dump(best_model_obj,          model_path)
+joblib.dump(scaler,                  scaler_path)
+joblib.dump(X_prep.columns.tolist(), feature_path)
+
+print(f'\n  Model terbaik     : {best_model_name}')
+print(f'     F1-Score          : {best_f1:.4f}')
+print(f'\n  File tersimpan di: {save_dir}')
+print(f'     - best_model.pkl    -> model terbaik untuk prediksi')
+print(f'     - scaler.pkl        -> StandardScaler untuk preprocessing input')
+print(f'     - feature_names.pkl -> daftar nama fitur untuk input form')
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 98 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **Progress 5**
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 99 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# **Bagian 5 - Deployment ke Streamlit Cloud**
+> Unit Kompetensi: Mendeploy model terbaik ke Streamlit Cloud.
+
+Pada bagian ini dilakukan persiapan dan deployment aplikasi prediksi churn.
+
+### Tahapan Deployment:
+| No | Tahap | Keterangan |
+|----|-------|------------|
+| 1 | Verifikasi Model | Pastikan model terbaik & artifacts tersedia |
+| 2 | Buat app.py | Aplikasi Streamlit lengkap |
+| 3 | Buat requirements.txt | Daftar dependensi untuk Streamlit Cloud |
+| 4 | Test lokal | Pastikan app berjalan sebelum deploy |
+| 5 | Upload GitHub | Push semua file ke repository |
+| 6 | Deploy Streamlit Cloud | Deploy dan pastikan bisa diakses publik |
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~ CELL 100 (markdown) ~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## **5.1 Verifikasi Model & Artifacts**
+> Memastikan semua file yang diperlukan untuk deployment sudah tersedia
+
+================================================================================
+=== CELL 101 (code) ===
+================================================================================
+import joblib
+import os
+import numpy as np
+
+print('=' * 60)
+print('     STEP 1 - VERIFIKASI MODEL & ARTIFACTS')
+print('=' * 60)
+
+save_dir     = r'c:\Users\Lenovo\OneDrive\Pictures\Documents\KULIAH\BENGKOD\UAS-Bengkel-Koding-DataScience\model'
+model_path   = os.path.join(save_dir, 'best_model.pkl')
+scaler_path  = os.path.join(save_dir, 'scaler.pkl')
+feature_path = os.path.join(save_dir, 'feature_names.pkl')
+
+files_to_check = {
+    'best_model.pkl'   : model_path,
+    'scaler.pkl'       : scaler_path,
+    'feature_names.pkl': feature_path
+}
+
+print(f'\n  Cek ketersediaan file artifacts:')
+all_ok = True
+for fname, fpath in files_to_check.items():
+    exist  = os.path.exists(fpath)
+    size   = f'{os.path.getsize(fpath)/1024:.1f} KB' if exist else '-'
+    status = '[OK]' if exist else '[MISSING]'
+    print(f'  {status} {fname:<25} {size}')
+    if not exist:
+        all_ok = False
+
+if all_ok:
+    loaded_model    = joblib.load(model_path)
+    loaded_scaler   = joblib.load(scaler_path)
+    loaded_features = joblib.load(feature_path)
+
+    print(f'\n  Detail Artifacts:')
+    print(f'     Model type     : {type(loaded_model).__name__}')
+    print(f'     Jumlah fitur   : {len(loaded_features)}')
+    print(f'     Scaler type    : {type(loaded_scaler).__name__}')
+
+    dummy        = np.zeros((1, len(loaded_features)))
+    dummy_scaled = loaded_scaler.transform(dummy)
+    pred         = loaded_model.predict(dummy_scaled)
+    print(f'\n  Test prediksi dummy berhasil -> output: {pred[0]}')
+    print(f'  Semua artifacts siap untuk deployment!')
+else:
+    print(f'\n  Ada file yang belum tersedia. Jalankan ulang cell simpan model!')
+
+
